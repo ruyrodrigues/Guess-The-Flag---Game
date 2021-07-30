@@ -25,6 +25,11 @@ class ViewController: UIViewController {
             score -= 1
         }
         
+        if score > highestScore {
+            highestScore = score
+        }
+        saveScore()
+        
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         
         alert.addAction(UIAlertAction(title: "Continue", style: .default, handler: askQuestion))
@@ -42,25 +47,32 @@ class ViewController: UIViewController {
     var score = 0
     var correctAnswer = 0
     var questionsAsked = 0
+    var highestScore = 0
+    
+    
+    //MARK: - ViewDidLoad
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        createButtonScore(title: "Score")
+        countries += ["estonia", "france", "germany", "ireland", "italy", "monaco", "nigeria", "poland", "russia", "uk", "us"]
+        changingProprietiesOffButtons()
+        askQuestion()
+        
+        let defaultScore = UserDefaults.standard
+        
+        if let savedScore = defaultScore.object(forKey: "highestScore") as? Data {
+            let jsonDecoder = JSONDecoder()
+            
+            do {
+                highestScore = try jsonDecoder.decode(Int.self, from: savedScore)
+            } catch {
+                fatalError()
+            }
+        }
+    }
     
     
     //MARK: - Methods
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "My points", style: .plain, target: self, action: #selector(showScore))
-        countries += ["estonia", "france", "germany", "ireland", "italy", "monaco", "nigeria", "poland", "russia", "uk", "us"]
-        button1.layer.borderWidth = 1
-        button2.layer.borderWidth = 1
-        button3.layer.borderWidth = 1
-        buttonReset.layer.borderWidth = 1.5
-        button1.layer.borderColor = UIColor.lightGray.cgColor
-        button2.layer.borderColor = UIColor.lightGray.cgColor
-        button3.layer.borderColor = UIColor.lightGray.cgColor
-        buttonReset.layer.borderColor = UIColor.lightGray.cgColor
-        buttonReset.layer.cornerRadius = 5
-        askQuestion()
-    }
-    
     func askQuestion(action: UIAlertAction! = nil) {
         questionsAsked += 1
         countries.shuffle()
@@ -71,7 +83,7 @@ class ViewController: UIViewController {
         
         title = "What is the \(countries[correctAnswer].uppercased()) flag?"
         
-        if questionsAsked == 5 {
+        if questionsAsked == 10 {
             let alert = UIAlertController(title: "Game Over", message: "The game has finished, your final score was \(score) points", preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "Close", style: .default, handler: resetGame))
             present(alert, animated: true)
@@ -85,9 +97,41 @@ class ViewController: UIViewController {
     }
 
     @objc func showScore() {
-        let alert = UIAlertController(title: "Your actual Score: \(score)", message: "", preferredStyle: .alert)
+        createAlert(title: "Your actual Score: \(score)", message: "Highest Score: \(highestScore)")
+    }
+    
+    func changingProprietiesOffButtons() {
+        button1.layer.borderWidth = 1
+        button2.layer.borderWidth = 1
+        button3.layer.borderWidth = 1
+        buttonReset.layer.borderWidth = 1.5
+        button1.layer.borderColor = UIColor.lightGray.cgColor
+        button2.layer.borderColor = UIColor.lightGray.cgColor
+        button3.layer.borderColor = UIColor.lightGray.cgColor
+        buttonReset.layer.borderColor = UIColor.lightGray.cgColor
+        buttonReset.layer.cornerRadius = 5
+    }
+    
+    func createButtonScore(title: String) {
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: title, style: .plain, target: self, action: #selector(showScore))
+    }
+    
+    func createAlert(title: String, message: String? = nil) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Close", style: .cancel))
         present(alert, animated: true)
+    }
+    
+    
+    //MARK: - Codable Saving
+    func saveScore() {
+        let jsonEncoder = JSONEncoder()
+        if let savedData = try? jsonEncoder.encode(highestScore) {
+            let defaultScore = UserDefaults.standard
+            defaultScore.set(savedData, forKey: "highestScore")
+        } else {
+            fatalError()
+        }
     }
     
 }
